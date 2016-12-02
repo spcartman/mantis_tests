@@ -1,6 +1,7 @@
 import pytest
 import json
 import os.path
+import importlib
 from fixture.application import Application
 
 
@@ -8,22 +9,23 @@ fixture = None
 target = None
 
 
-def load_conf_file(file):
+@pytest.fixture(scope="session")
+def config(request):
     global target
     if target is None:
-        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
+        config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), request.config.getoption("--target"))
         with open(config_file) as f:
             target = json.load(f)
     return target
 
 
 @pytest.fixture
-def app(request):
+def app(request, config):
     global fixture
-    web_config = load_conf_file(request.config.getoption("--target"))["web"]
     if (fixture is None) or (not fixture.is_valid()):
-        fixture = Application(browser=request.config.getoption("--browser"), base_url=web_config["baseUrl"])
-        fixture.navigation.open_home_page()
+        fixture = Application(browser=request.config.getoption("--browser"), base_url=config["web"]["baseUrl"])
+        fixture.navigation.home_page()
+    fixture.session.ensure_login(username=config["webadmin"]["user"], password=config["webadmin"]["pass"])
     return fixture
 
 
@@ -38,3 +40,10 @@ def stop(request):
 def pytest_addoption(parser):
     parser.addoption("--browser", action="store", default="firefox")
     parser.addoption("--target", action="store", default="target.json")
+
+
+def pytest_generate_tests(metafunc):
+    for fixture in metafunc.fixturenames:
+        if fixture.startswith("data_"):
+            test_data = importlib.import_module("data.%s" % fixture[5:]).test_data
+            metafunc.parametrize(fixture, test_data, ids=[str(x) for x in test_data])
