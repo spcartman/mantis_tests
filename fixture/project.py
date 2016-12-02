@@ -1,3 +1,7 @@
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 from model.project import Project
 
 
@@ -21,6 +25,14 @@ class ProjectHelper:
         self.app.ensure_confirm_page("Operation successful.")
         self.project_cache = None
 
+    def delete(self, project):
+        wd = self.app.wd
+        wd.find_element_by_xpath("//a[text()='%s']" % project.name).click()
+        wd.find_element_by_xpath("//input[@value='Delete Project']").click()
+        wd.find_element_by_xpath("//input[@value='Delete Project']").click()
+        self.ensure_projects_page_opened()
+        self.project_cache = None
+
     project_cache = None
 
     def get_project_list(self):
@@ -42,3 +54,15 @@ class ProjectHelper:
         if table_presentation == 'X':
             return True
         return False
+
+    def ensure_existence_sanity_check(self):
+        self.app.navigation.go_to_projects()
+        if len(self.get_project_list()) == 0:
+            self.create(Project(name="Sanity project"))
+            self.app.navigation.go_to_projects()
+
+    def ensure_projects_page_opened(self):
+        try:
+            WebDriverWait(self.app.wd, 5).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row-category")))
+        except TimeoutException:
+            raise TimeoutException("\nProjects page was not loaded in due time.\n")
