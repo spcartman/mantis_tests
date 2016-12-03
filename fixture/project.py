@@ -27,7 +27,7 @@ class ProjectHelper:
 
     def delete(self, project):
         wd = self.app.wd
-        wd.find_element_by_xpath("//a[text()='%s']" % project.name).click()
+        wd.find_element_by_xpath("//a[@href='manage_proj_edit_page.php?project_id=%s']" % project.id).click()
         wd.find_element_by_xpath("//input[@value='Delete Project']").click()
         wd.find_element_by_xpath("//input[@value='Delete Project']").click()
         self.ensure_projects_page_opened()
@@ -46,7 +46,7 @@ class ProjectHelper:
                 enabled = self.define_enabled(element.find_element_by_css_selector("td:nth-child(3)").text)
                 view = element.find_element_by_css_selector("td:nth-child(4)").text
                 description = element.find_element_by_css_selector("td:nth-child(5)").text
-                self.project_cache.append(Project(id=id, name=name, status=status, enabled=enabled, view=view,
+                self.project_cache.append(Project(id=str(id), name=name, status=status, enabled=enabled, view=view,
                                                   description=description))
         return list(self.project_cache)
 
@@ -56,10 +56,8 @@ class ProjectHelper:
         return False
 
     def ensure_existence_sanity_check(self):
-        self.app.navigation.go_to_projects()
-        if len(self.get_project_list()) == 0:
-            self.create(Project(name="Sanity project"))
-            self.app.navigation.go_to_projects()
+        if len(self.app.soap.get_project_list()) == 0:
+            self.app.soap.create(Project(name="Sanity project by API"))
 
     def ensure_projects_page_opened(self):
         try:
