@@ -7,11 +7,12 @@ from selenium.webdriver.support.ui import Select
 from fixture.navigation import NavigationHelper
 from fixture.session import SessionHelper
 from fixture.project import ProjectHelper
+from fixture.soap import SOAPHelper
 
 
 class Application:
 
-    def __init__(self, browser, base_url):
+    def __init__(self, browser, base_url, user, password):
         if browser == "firefox":
             self.wd = webdriver.Firefox()
         elif browser == "chrome":
@@ -21,9 +22,12 @@ class Application:
         else:
             raise ValueError("Unrecognized browser %s" % browser)
         self.base_url = base_url
+        self.user = user
+        self.password = password
         self.navigation = NavigationHelper(self)
         self.session = SessionHelper(self)
         self.project = ProjectHelper(self)
+        self.soap = SOAPHelper(self)
 
     def is_valid(self):
         try:
